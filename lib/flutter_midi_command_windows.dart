@@ -54,6 +54,7 @@ class FlutterMidiCommandWindows extends MidiCommandPlatform {
     await Future.delayed(Duration(seconds: 3));
     DeviceManager().addListener(() {
       var event = DeviceManager().lastEvent;
+      print("DeviceManager event: ${event?.toString()}");
       if (event != null) {
         if (event.eventType == EventType.add) {
           _setupStreamController.add("deviceAppeared");
@@ -74,10 +75,12 @@ class FlutterMidiCommandWindows extends MidiCommandPlatform {
   //#region
   @override
   Future<List<MidiDevice>> get devices async {
+    print("Discovering MIDI devices...");
     var devices = Map<String, MidiDevice>();
 
     Pointer<MIDIINCAPS> inCaps = malloc<MIDIINCAPS>();
     int nMidiDeviceNum = midiInGetNumDevs();
+    print("Found $nMidiDeviceNum MIDI IN devices");
 
     Map<String, int> deviceInputs = {};
 
@@ -111,6 +114,7 @@ class FlutterMidiCommandWindows extends MidiCommandPlatform {
 
     Pointer<MIDIOUTCAPS> outCaps = malloc<MIDIOUTCAPS>();
     nMidiDeviceNum = midiOutGetNumDevs();
+    print("Found $nMidiDeviceNum MIDI OUT devices");
 
     Map<String, int> deviceOutputs = {};
 
@@ -155,6 +159,7 @@ class FlutterMidiCommandWindows extends MidiCommandPlatform {
   /// Prepares Bluetooth system
   @override
   Future<void> startBluetoothCentral() async {
+    print("Starting Bluetooth Central...");
     UniversalBle.timeout = const Duration(seconds: 10);
 
     UniversalBle.onAvailabilityChange = (state) {
@@ -171,6 +176,8 @@ class FlutterMidiCommandWindows extends MidiCommandPlatform {
               BLEMidiDevice(result.deviceId, result.name!, _rxStreamController);
           _setupStreamController.add('deviceAppeared');
         }
+      } else {
+        print("Device ${result.deviceId} already discovered, ignoring scan result");
       }
     };
 
@@ -184,18 +191,24 @@ class FlutterMidiCommandWindows extends MidiCommandPlatform {
           _discoveredBLEDevices.remove(deviceId);
           _setupStreamController.add('deviceDisconnected');
         }
+      } else {
+        print("Device $deviceId not found in discovered devices, ignoring connection change");
       }
     };
 
     UniversalBle.onValueChange = (deviceId, characteristicId, Uint8List data) {
       if (_discoveredBLEDevices.containsKey(deviceId)) {
         _discoveredBLEDevices[deviceId]!.handleData(data);
+      } else {
+        print("Device $deviceId not found in discovered devices, ignoring value change");
       }
     };
 
     UniversalBle.onPairingStateChange = (deviceId, state) {
       if (_discoveredBLEDevices.containsKey(deviceId)) {
         _discoveredBLEDevices[deviceId]!.pairingState = state;
+      } else {
+        print("Device $deviceId not found in discovered devices, ignoring pairing state change");
       }
     };
   }
@@ -232,8 +245,7 @@ class FlutterMidiCommandWindows extends MidiCommandPlatform {
 
   /// Connects to the device.
   @override
-  Future<void> connectToDevice(MidiDevice device,
-      {List<MidiPort>? ports}) async {
+  Future<void> connectToDevice(MidiDevice device, {List<MidiPort>? ports}) async {
     if (device is WindowsMidiDevice) {
       var success = device.connect();
       if (success) {
@@ -243,6 +255,8 @@ class FlutterMidiCommandWindows extends MidiCommandPlatform {
       }
     } else if (device is BLEMidiDevice) {
       device.connect();
+    } else {
+      print("Ignore unsupported device type: ${device.runtimeType}");
     }
   }
 

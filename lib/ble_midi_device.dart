@@ -155,6 +155,7 @@ class BLEMidiDevice extends MidiDevice {
   }
 
   _discoverServices() async {
+    print("Discovering services for device $deviceId");
     devState = DeviceState.Interrogating;
 
     var services = await UniversalBle.discoverServices(deviceId);
@@ -175,9 +176,11 @@ class BLEMidiDevice extends MidiDevice {
         }
       } else {
         devState = DeviceState.Irrelevant;
+        print("No MIDI characteristic found for device $deviceId. Characteristics are ${_midiService!.characteristics.map((c) => c.uuid).join(', ')}");
       }
     } else {
       devState = DeviceState.Irrelevant;
+      print("No MIDI service found for device $deviceId. Services are ${services.map((s) => s.uuid).join(', ')}");
     }
   }
 
