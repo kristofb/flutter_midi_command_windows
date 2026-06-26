@@ -18,8 +18,8 @@ class WindowsMidiDevice extends MidiDevice {
   StreamController<MidiPacket> _rxStreamCtrl;
   StreamController<String> _setupStreamController;
 
-  final hMidiInDevicePtr = malloc<IntPtr>();
-  final hMidiOutDevicePtr = malloc<IntPtr>();
+  final hMidiInDevicePtr = malloc<Pointer>();
+  final hMidiOutDevicePtr = malloc<Pointer>();
 
   int callbackAddress;
 
@@ -44,11 +44,12 @@ class WindowsMidiDevice extends MidiDevice {
     if (mIn != null) {
       var id = mIn.key;
       int result = midiInOpen(
-          hMidiInDevicePtr as Pointer<Pointer>, id, callbackAddress, 0, CALLBACK_FUNCTION);
+          hMidiInDevicePtr, id, callbackAddress, 0, CALLBACK_FUNCTION);
       if (result != 0) {
         print("OPEN ERROR($result): ${midiErrorMessage(result)}");
         return false;
       } else {
+        print("IN OPEN SUCCESS");
         // Setup buffer
         for (int i = 0; i < _numberOfBuffers; i++) {
           _midiInBuffers[i] = malloc<BYTE>(_bufferSize);
@@ -86,10 +87,13 @@ class WindowsMidiDevice extends MidiDevice {
     if (mOut != null) {
       var id = mOut.key;
 
-      int result = midiOutOpen(hMidiOutDevicePtr  as Pointer<Pointer>, id, 0, 0, CALLBACK_NULL);
+      int result = midiOutOpen(hMidiOutDevicePtr, id, 0, 0, CALLBACK_NULL);
       if (result != 0) {
         print("OUT OPEN ERROR: result");
         return false;
+      }
+      else {
+        print("OUT OPEN SUCCESS");
       }
 
       _midiOutBuffer = malloc<BYTE>(_bufferSize);
@@ -192,6 +196,9 @@ class WindowsMidiDevice extends MidiDevice {
         hMidiOutDevicePtr.value as HMIDIOUT, _midiOutHeader, sizeOf<MIDIHDR>());
     if (result != 0) {
       print("SEND ERROR($result): ${midiErrorMessage(result)}");
+    }
+    else {
+      print("SEND SUCCESS ${data.length} bytes");
     }
 
     result = midiOutUnprepareHeader(
