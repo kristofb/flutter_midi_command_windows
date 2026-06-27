@@ -49,7 +49,7 @@ class FlutterMidiCommandWindows extends MidiCommandPlatform {
     _setupDeviceManager();
   }
 
-  _setupDeviceManager() async {
+  Future<void> _setupDeviceManager() async {
     await Future.delayed(Duration(seconds: 3));
     DeviceManager().addListener(() {
       var event = DeviceManager().lastEvent;
