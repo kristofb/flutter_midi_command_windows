@@ -23,7 +23,7 @@ class WindowsMidiDevice extends MidiDevice {
 
   int callbackAddress;
 
-  final _bufferSize = 8192;
+  final int _bufferSize = 8192;
 
   List<Pointer<MIDIHDR>> _midiInHeaders = List.generate(_numberOfBuffers, (index) => nullptr);
   List<Pointer<BYTE>> _midiInBuffers = List.generate(_numberOfBuffers, (index) => nullptr);
@@ -151,34 +151,34 @@ class WindowsMidiDevice extends MidiDevice {
     return true;
   }
 
-  addInput(int id, MIDIINCAPS input) {
+  void addInput(int id, MIDIINCAPS input) {
     _ins[id] = input;
     inputPorts.add(MidiPort(input.wPid, MidiPortType.IN));
   }
 
-  addOutput(int id, MIDIOUTCAPS output) {
+  void addOutput(int id, MIDIOUTCAPS output) {
     _outs[id] = output;
     outputPorts.add(MidiPort(output.wPid, MidiPortType.OUT));
   }
 
-  containsMidiIn(int input) => hMidiInDevicePtr.value == input;
+  bool containsMidiIn(int input) => hMidiInDevicePtr.value == input;
 
-  _resetHeader(Pointer<MIDIHDR> midiHdrPointer) {
+  void _resetHeader(Pointer<MIDIHDR> midiHdrPointer) {
     midiInAddBuffer(hMidiInDevicePtr.value as HMIDIIN, midiHdrPointer, sizeOf<MIDIHDR>());
   }
 
-  handleData(Uint8List data, int timestamp) {
+  void handleData(Uint8List data, int timestamp) {
     // print('handle data $data');
     _rxStreamCtrl.add(MidiPacket(data, timestamp, this));
   }
 
-  handleSysexData(Uint8List data, Pointer<MIDIHDR> midiHdrPointer) {
+  void handleSysexData(Uint8List data, Pointer<MIDIHDR> midiHdrPointer) {
     // print('handle SysEX: $data');
     _rxStreamCtrl.add(MidiPacket(data, 0, this));
     _resetHeader(midiHdrPointer);
   }
 
-  send(Uint8List data) async {
+  Future<void> send(Uint8List data) async {
     // Set data in out buffer
     _midiOutBuffer.asTypedList(data.length).setAll(0, data);
     _midiOutHeader.ref.lpData = _midiOutBuffer as PSTR;

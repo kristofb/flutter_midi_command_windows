@@ -44,16 +44,16 @@ class BLEMidiDevice extends MidiDevice {
 
   BLEMidiDevice(this.deviceId, this.name, this._rxStreamCtrl) : super(deviceId, name, 'BLE', false) {}
 
-  connect() {
+  void connect() {
     UniversalBle.connect(deviceId);
   }
 
-  disconnect() {
+  void disconnect() {
     UniversalBle.unsubscribe(deviceId, _midiService!.uuid, _midiCharacteristic!.uuid);
     UniversalBle.disconnect(deviceId);
   }
 
-  send(Uint8List bytes) async {
+  Future<void> send(Uint8List bytes) async {
     if (_midiService == null) return;
     if (_midiCharacteristic == null) return;
 
@@ -136,7 +136,7 @@ class BLEMidiDevice extends MidiDevice {
     }
   }
 
-  _sendBytes(List<int> bytes) async {
+  Future<void> _sendBytes(List<int> bytes) async {
     try {
       await UniversalBle.write(
         deviceId,
@@ -150,11 +150,11 @@ class BLEMidiDevice extends MidiDevice {
     }
   }
 
-  handleData(Uint8List data) {
+  void handleData(Uint8List data) {
     _parseBLEPacket(data);
   }
 
-  _discoverServices() async {
+  Future<void> _discoverServices() async {
     devState = DeviceState.Interrogating;
 
     var services = await UniversalBle.discoverServices(deviceId);
@@ -181,7 +181,7 @@ class BLEMidiDevice extends MidiDevice {
     }
   }
 
-  _startNotify() {
+  void _startNotify() {
     try {
       UniversalBle.subscribeNotifications(deviceId, _midiService!.uuid, _midiCharacteristic!.uuid);
     } catch (e) {
@@ -189,7 +189,7 @@ class BLEMidiDevice extends MidiDevice {
     }
   }
 
-  _createMessageEvent(List<int> bytes, int timestamp) {
+  void _createMessageEvent(List<int> bytes, int timestamp) {
     _rxStreamCtrl.add(MidiPacket(Uint8List.fromList(bytes), timestamp, this));
   }
 
@@ -200,7 +200,7 @@ class BLEMidiDevice extends MidiDevice {
   int bleMidiPacketLength = 0;
   bool bleSysExHasFinished = true;
 
-  _parseBLEPacket(Uint8List packet) {
+  void _parseBLEPacket(Uint8List packet) {
     if (packet.length > 1) {
       // parse BLE message
       bleHandlerState = BLE_HANDLER_STATE.HEADER;
