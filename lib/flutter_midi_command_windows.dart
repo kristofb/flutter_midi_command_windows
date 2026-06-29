@@ -381,7 +381,7 @@ String midiErrorMessage(int status) {
 }
 
 NativeCallable<Void Function(IntPtr, Uint32, IntPtr, IntPtr, IntPtr)> _midiCB =
-    NativeCallable<MIDIINPROC>.listener(_onMidiData);
+    NativeCallable<Void Function(IntPtr, Uint32, IntPtr, IntPtr, IntPtr)>.listener(_onMidiData);
 
 const int MHDR_DONE = 0x00000001;
 const int MHDR_PREPARED = 0x00000002;
