@@ -12,7 +12,6 @@ import 'package:win32/win32.dart';
 import 'package:device_manager/device_event.dart';
 import 'package:device_manager/device_manager.dart';
 
-
 class FlutterMidiCommandWindows extends MidiCommandPlatform {
   StreamController<MidiPacket> _rxStreamController =
       StreamController<MidiPacket>.broadcast();
@@ -166,7 +165,7 @@ class FlutterMidiCommandWindows extends MidiCommandPlatform {
       if (!_discoveredBLEDevices.containsKey(result.deviceId)) {
         if (result.name != null) {
           debugPrint(
-              "${result.name} ${result.deviceId} ${result.manufacturerData}");
+              "${result.name} ${result.deviceId} ${result.manufacturerDataList.map((e) => e.toString()).join(', ')}");
           _discoveredBLEDevices[result.deviceId] =
               BLEMidiDevice(result.deviceId, result.name!, _rxStreamController);
           _setupStreamController.add('deviceAppeared');
@@ -177,7 +176,8 @@ class FlutterMidiCommandWindows extends MidiCommandPlatform {
     UniversalBle.onConnectionChange = (deviceId, isConnected, error) {
       if (_discoveredBLEDevices.containsKey(deviceId)) {
         if (isConnected) {
-          _discoveredBLEDevices[deviceId]!.connectionState = BleConnectionState.connected;
+          _discoveredBLEDevices[deviceId]!.connectionState =
+              BleConnectionState.connected;
           _setupStreamController.add('deviceConnected');
         } else {
           _discoveredBLEDevices.remove(deviceId);
@@ -381,7 +381,7 @@ String midiErrorMessage(int status) {
 }
 
 NativeCallable<Void Function(IntPtr, Uint32, IntPtr, IntPtr, IntPtr)> _midiCB =
-    NativeCallable<MIDIINPROC>.listener(_onMidiData);
+    NativeCallable<Void Function(IntPtr, Uint32, IntPtr, IntPtr, IntPtr)>.listener(_onMidiData);
 
 const int MHDR_DONE = 0x00000001;
 const int MHDR_PREPARED = 0x00000002;
@@ -391,7 +391,6 @@ final List<int> partialSysExBuffer = [];
 
 void _onMidiData(
     int hMidiIn, int wMsg, int dwInstance, int dwParam1, int dwParam2) {
-
   var dev = FlutterMidiCommandWindows().findMidiDeviceForSource(hMidiIn);
   final midiHdrPointer = Pointer<MIDIHDR>.fromAddress(dwParam1);
   final midiHdr = midiHdrPointer.ref;
@@ -410,7 +409,6 @@ void _onMidiData(
       break;
     case MM_MIM_LONGDATA:
       if ((midiHdr.dwFlags & MHDR_DONE) != 0) {
-
         final dataPointer = midiHdr.lpData.cast<Uint8>();
         final messageData = dataPointer.asTypedList(midiHdr.dwBytesRecorded);
 
@@ -421,7 +419,7 @@ void _onMidiData(
         partialSysExBuffer.addAll(messageData);
 
         if (partialSysExBuffer.isNotEmpty && partialSysExBuffer.last == 0xF7) {
-          dev?.handleSysexData(messageData, midiHdrPointer);
+          dev?.handleSysexData(Uint8List.fromList(partialSysExBuffer), midiHdrPointer);
           partialSysExBuffer.clear();
         }
 
@@ -430,7 +428,6 @@ void _onMidiData(
         //var data = pMidiHdr.ref.lpData
         //    .cast<Uint8>()
         //    .asTypedList(pMidiHdr.ref.dwBytesRecorded);
-       
       } else {
         // Decode and log each flag for debugging
         if ((midiHdr.dwFlags & MHDR_PREPARED) != 0) {
